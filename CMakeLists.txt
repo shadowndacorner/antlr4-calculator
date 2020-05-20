@@ -1,0 +1,36 @@
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    message(STATUS "Building parser libraries independently")
+    cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+    set (CMAKE_CXX_STANDARD 17)
+    project(calc-antlr VERSION 0.1 LANGUAGES CXX)
+
+    if (${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(BINARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/)
+    elseif(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
+        set(BINARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_GENERATOR}/${CMAKE_GENERATOR_PLATFORM})
+    else()
+        set(BINARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_GENERATOR}/${CMAKE_BUILD_TYPE}/${CMAKE_GENERATOR_PLATFORM})
+    endif()
+
+    if (MSVC)
+        add_definitions(-D_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+        add_compile_options("/MP")
+    endif()
+
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIRECTORY}/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIRECTORY}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BINARY_OUTPUT_DIRECTORY})
+endif()
+
+add_subdirectory(runtime EXCLUDE_FROM_ALL)
+
+file(GLOB_RECURSE PARSER_SRC "parser/*.cpp" "parser/*.hpp" "parser/*.h")
+add_library(calc_parser STATIC ${PARSER_SRC})
+target_link_libraries(calc_parser PUBLIC antlr4_static)
+target_include_directories(calc_parser PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/parser")
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    file(GLOB_RECURSE SAMPLE_SRC "sample_cli/src/*.cpp" "sample_cli/src/*.hpp" "sample_cli/src/*.h")
+    add_executable(eval ${SAMPLE_SRC})
+    target_link_libraries(eval PUBLIC calc_parser)
+endif()
